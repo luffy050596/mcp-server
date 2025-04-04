@@ -60,7 +60,7 @@ jobs:
         echo "\`\`\`" >> LICENSE-3RD-PARTY.md
 
     - name: Upload License Report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: license-report
         path: LICENSE-3RD-PARTY.md
