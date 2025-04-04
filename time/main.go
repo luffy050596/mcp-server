@@ -34,5 +34,6 @@ func main() {
 
 	svr.RegisterTool(currentTimeTool(), currentTimeHandler)
 	svr.RegisterTool(timestampTool(), timestampHandler)
+	svr.RegisterTool(timeTool(), timeHandler)
 	pkg.Run(svr)
 }

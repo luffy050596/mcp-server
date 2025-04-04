@@ -129,7 +129,7 @@ type CreateTaskResponse struct {
 	} `json:"output"`
 }
 
-func (c *PosterClient) CreatePosterTask(ctx context.Context, req CreateTaskRequest) (*CreateTaskResponse, error) {
+func (c *PosterClient) CreatePosterTask(ctx context.Context, req *CreateTaskRequest) (*CreateTaskResponse, error) {
 	if err := req.Input.checkAndCompletion(); err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ type QueryTaskResponse struct {
 func (c *PosterClient) QueryPosterTask(ctx context.Context, taskID string) (*QueryTaskResponse, error) {
 	url := fmt.Sprintf("%s/%s", queryURL, taskID)
 
-	httpReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("create request failed: %w", err)
 	}

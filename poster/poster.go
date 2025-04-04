@@ -129,7 +129,7 @@ func posterHandler(request *protocol.CallToolRequest, generateMode string) (*pro
 
 	client := NewPosterClient(key)
 
-	createResp, err := client.CreatePosterTask(ctx, CreateTaskRequest{
+	createResp, err := client.CreatePosterTask(ctx, &CreateTaskRequest{
 		Model:      posterModel,
 		Input:      input,
 		Parameters: map[string]any{},
@@ -150,40 +150,44 @@ func posterHandler(request *protocol.CallToolRequest, generateMode string) (*pro
 
 	reply := &posterReply{}
 
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
 	eg := &errgroup.Group{}
 	eg.Go(func() error {
-		for range time.Tick(5 * time.Second) {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+		for {
+			select {
+			case <-ticker.C:
+				ctx1, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				queryResp, err1 := client.QueryPosterTask(ctx1, taskID)
+				cancel()
 
-			queryResp, err := client.QueryPosterTask(ctx, taskID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to query poster task")
-			}
-			switch queryResp.Output.TaskStatus {
-			case TaskStatusSucceeded:
-				reply.RenderURLs = queryResp.Output.RenderURLs
-				reply.AuxiliaryParams = queryResp.Output.AuxiliaryParams
-				// reply.BgURLs = queryResp.Output.BgURLs
-				// reply.ImageCount = queryResp.Usage.ImageCount
-				// reply.SubmitTime = queryResp.Output.SubmitTime
-				// reply.ScheduledTime = queryResp.Output.ScheduledTime
-				// reply.EndTime = queryResp.Output.EndTime
-				return nil
-			case TaskStatusFailed:
-				return errors.Errorf("code: %s, message: %s", queryResp.Output.Code, queryResp.Output.Message)
-			case TaskStatusRunning, TaskStatusPending, TaskStatusSuspended:
-				fmt.Printf("poster task is %s: taskID: %s\n", queryResp.Output.TaskStatus, taskID)
-				continue
-			default:
-				return errors.Errorf("query task status failed: %s", queryResp.Output.TaskStatus)
+				if err1 != nil {
+					return errors.Wrapf(err1, "failed to query poster task")
+				}
+
+				switch queryResp.Output.TaskStatus {
+				case TaskStatusSucceeded:
+					reply.RenderURLs = queryResp.Output.RenderURLs
+					reply.AuxiliaryParams = queryResp.Output.AuxiliaryParams
+					return nil
+				case TaskStatusFailed:
+					return errors.Errorf("code: %s, message: %s", queryResp.Output.Code, queryResp.Output.Message)
+				case TaskStatusRunning, TaskStatusPending, TaskStatusSuspended:
+					fmt.Printf("poster task is %s: taskID: %s\n", queryResp.Output.TaskStatus, taskID)
+					continue
+				default:
+					return errors.Errorf("query task status failed: %s", queryResp.Output.TaskStatus)
+				}
+
+			case <-ctx.Done():
+				return errors.Errorf("query task status timeout: taskID: %s", taskID)
 			}
 		}
-		return nil
 	})
 
-	if err := eg.Wait(); err != nil {
-		return nil, err
+	if err2 := eg.Wait(); err2 != nil {
+		return nil, err2
 	}
 
 	replyJSON, err := reply.Json()
