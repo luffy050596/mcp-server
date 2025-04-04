@@ -4,7 +4,8 @@
 [![GoDoc](https://godoc.org/github.com/luffy050596/mcp-server?status.svg)](https://godoc.org/github.com/luffy050596/mcp-server)
 [![License](https://img.shields.io/github/license/luffy050596/mcp-server.svg)](https://github.com/luffy050596/mcp-server/blob/main/LICENSE)
 
-MCP Server is a Go-based MCP tools project that provides a series of MCP utilities. This is a personal learning project, please do not use it in production environment.
+MCP Server is a Go-based MCP tools project that provides a series of MCP utilities. 
+This is a personal learning project, please do not use it in production environment.
 Using [github.com/ThinkInAIXYZ/go-mcp](https://github.com/ThinkInAIXYZ/go-mcp) as the MCP core framework.
 
 ## Features
