@@ -41,7 +41,10 @@ func ipGeoHandler(request *protocol.CallToolRequest) (*protocol.CallToolResult, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get ip geo location")
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

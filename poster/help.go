@@ -13,7 +13,7 @@ const text = `
       "description": "推荐使用百炼 API-Key，也可填 DashScope API-Key。例如：Bearer d1xxx2a"
     },
     "X-DashScope-Async": {
-      "type": "string", 
+      "type": "string",
       "required": true,
       "description": "是否使用 DashScope 异步调用。HTTP 只支持异步调用",
       "value": "enable"
