@@ -1,6 +1,12 @@
 GOCMD=GO111MODULE=on CGO_ENABLED=0 go
 GOBUILD=${GOCMD} build
 GOINSTALL=${GOCMD} install
+TOOLS_SHELL="./hack/tools.sh"
+# golangci-lint
+LINTER := bin/golangci-lint
+
+$(LINTER):
+	curl -SL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.1.1
 
 .PHONY: build
 # Build executable file
@@ -38,3 +44,17 @@ install-all:
 # Test
 test:
 	go test -v ./... -cover
+
+.PHONY: test-coverage
+test-coverage:
+	@${TOOLS_SHELL} test_coverage
+
+.PHONY: lint
+lint: $(LINTER)
+	echo $(os)
+	@${TOOLS_SHELL} lint
+
+.PHONY: changelog
+# generate changelog
+changelog:
+	git-chglog -o ./CHANGELOG.md

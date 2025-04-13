@@ -18,4 +18,4 @@ jobs:
         with:
           go-version-file: "go.mod"
       - name: check licenses
-        run: ./script/licenses-check
+        run: ./hack/licenses-check
