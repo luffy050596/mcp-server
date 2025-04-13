@@ -45,14 +45,6 @@ jobs:
             category: /language:go
             build-mode: autobuild
             runner: '["ubuntu-22.04"]'
-          - language: javascript
-            category: /language:javascript
-            build-mode: none
-            runner: '["ubuntu-22.04"]'
-          - language: python
-            category: /language:python
-            build-mode: none
-            runner: '["ubuntu-22.04"]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -107,20 +99,6 @@ jobs:
         with:
           go-version: ${{ fromJSON(steps.resolve-environment.outputs.environment).configuration.go.version }}
           cache: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        if: matrix.language == 'javascript'
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        if: matrix.language == 'python'
-        with:
-          python-version: '3.10'
-          cache: 'pip'
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
