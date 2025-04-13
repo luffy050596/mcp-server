@@ -1,6 +1,17 @@
 name: "CodeQL"
 run-name: ${{ github.event.inputs.code_scanning_run_name }}
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '**/*.txt'
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly scan on Sunday
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,6 +32,7 @@ jobs:
       packages: read
       security-events: write
     continue-on-error: false
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -33,9 +45,19 @@ jobs:
             category: /language:go
             build-mode: autobuild
             runner: '["ubuntu-22.04"]'
+          - language: javascript
+            category: /language:javascript
+            build-mode: none
+            runner: '["ubuntu-22.04"]'
+          - language: python
+            category: /language:python
+            build-mode: none
+            runner: '["ubuntu-22.04"]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -43,13 +65,34 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           dependency-caching: ${{ runner.environment == 'github-hosted' }}
-          queries: "" # Default query suite
+          # Use security-extended for better coverage
+          queries: security-extended
           packs: github/ccr-${{ matrix.language }}-queries
+          ram: 4096  # Set RAM limit to 4GB
           config: |
             default-setup:
               org:
                 model-packs: [ ${{ github.event.inputs.code_scanning_codeql_packs }} ]
-            threat-models: [  ]
+            threat-models:
+              - name: "Standard web application threats"
+                description: "Covers SQL injection, XSS, and CSRF"
+                rules:
+                  - id: "web-attacks"
+              - name: "Supply chain threats"
+                description: "Dependency and package vulnerabilities"
+                rules:
+                  - id: "supply-chain"
+            # Disable noisy queries that produce too many false positives
+            queries:
+              - name: Disable taint-tracking queries in generated files
+                include:
+                  kind:
+                    - problem
+                    - path-problem
+                exclude:
+                  tags:
+                    - generated
+
       - name: Setup proxy for registries
         id: proxy
         uses: github/codeql-action/start-proxy@v3
@@ -62,12 +105,27 @@ jobs:
         id: resolve-environment
         with:
           language: ${{ matrix.language }}
+
       - name: Setup Go
         uses: actions/setup-go@v5
         if: matrix.language == 'go' && fromJSON(steps.resolve-environment.outputs.environment).configuration.go.version
         with:
           go-version: ${{ fromJSON(steps.resolve-environment.outputs.environment).configuration.go.version }}
           cache: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        if: matrix.language == 'javascript'
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        if: matrix.language == 'python'
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
@@ -80,3 +138,5 @@ jobs:
           CODEQL_PROXY_CA_CERTIFICATE: ${{ steps.proxy.outputs.proxy_ca_certificate }}
         with:
           category: ${{ matrix.category }}
+          upload: true
+          checkout-path: ${{ github.workspace }}
