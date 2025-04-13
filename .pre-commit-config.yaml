@@ -3,15 +3,21 @@ repos:
     rev: v5.0.0
     hooks:
       - id: end-of-file-fixer
+        exclude: ^third-party/
       - id: trailing-whitespace
+        exclude: ^third-party/
       - id: check-yaml
+        exclude: ^third-party/
       - id: check-added-large-files
+        exclude: ^third-party/
       - id: check-merge-conflict
+        exclude: ^third-party/
   - repo: https://github.com/golangci/golangci-lint
     rev: v2.1.1
     hooks:
       - id: golangci-lint
         args: [--fix=false]
+        exclude: ^third-party/
         stages: [commit]
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.6.0
@@ -22,3 +28,4 @@ repos:
     rev: v8.24.3
     hooks:
       - id: gitleaks
+        exclude: ^third-party/

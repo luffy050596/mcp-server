@@ -1,17 +1,6 @@
 name: "CodeQL"
 run-name: ${{ github.event.inputs.code_scanning_run_name }}
-on:
-  push:
-    branches: [ main, master ]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '**/*.txt'
-  pull_request:
-    branches: [ main, master ]
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly scan on Sunday
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,7 +21,6 @@ jobs:
       packages: read
       security-events: write
     continue-on-error: false
-    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -48,8 +36,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -57,29 +43,13 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           dependency-caching: ${{ runner.environment == 'github-hosted' }}
-          queries: security-extended
+          queries: "" # Default query suite
           packs: github/ccr-${{ matrix.language }}-queries
-          ram: 4096
           config: |
             default-setup:
               org:
-                model-packs: "${{ github.event.inputs.code_scanning_codeql_packs }}"
-            threat-models:
-              - name: "Standard web application threats"
-                description: "Covers SQL injection, XSS, and CSRF"
-                rules:
-                  - "web-attacks"
-              - name: "Supply chain threats"
-                description: "Dependency and package vulnerabilities"
-                rules:
-                  - "supply-chain"
-            queries:
-              - name: "Disable taint-tracking queries in generated files"
-                include:
-                  kind: ["problem", "path-problem"]
-                exclude:
-                  tags: ["generated"]
-
+                model-packs: [ ${{ github.event.inputs.code_scanning_codeql_packs }} ]
+            threat-models: [  ]
       - name: Setup proxy for registries
         id: proxy
         uses: github/codeql-action/start-proxy@v3
@@ -92,7 +62,6 @@ jobs:
         id: resolve-environment
         with:
           language: ${{ matrix.language }}
-
       - name: Setup Go
         uses: actions/setup-go@v5
         if: matrix.language == 'go' && fromJSON(steps.resolve-environment.outputs.environment).configuration.go.version
@@ -111,4 +80,3 @@ jobs:
           CODEQL_PROXY_CA_CERTIFICATE: ${{ steps.proxy.outputs.proxy_ca_certificate }}
         with:
           category: ${{ matrix.category }}
-          upload: true
