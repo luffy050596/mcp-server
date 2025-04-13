@@ -65,33 +65,28 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           dependency-caching: ${{ runner.environment == 'github-hosted' }}
-          # Use security-extended for better coverage
           queries: security-extended
           packs: github/ccr-${{ matrix.language }}-queries
-          ram: 4096  # Set RAM limit to 4GB
+          ram: 4096
           config: |
             default-setup:
               org:
-                model-packs: [ ${{ github.event.inputs.code_scanning_codeql_packs }} ]
+                model-packs: "${{ github.event.inputs.code_scanning_codeql_packs }}"
             threat-models:
               - name: "Standard web application threats"
                 description: "Covers SQL injection, XSS, and CSRF"
                 rules:
-                  - id: "web-attacks"
+                  - "web-attacks"
               - name: "Supply chain threats"
                 description: "Dependency and package vulnerabilities"
                 rules:
-                  - id: "supply-chain"
-            # Disable noisy queries that produce too many false positives
+                  - "supply-chain"
             queries:
-              - name: Disable taint-tracking queries in generated files
+              - name: "Disable taint-tracking queries in generated files"
                 include:
-                  kind:
-                    - problem
-                    - path-problem
+                  kind: ["problem", "path-problem"]
                 exclude:
-                  tags:
-                    - generated
+                  tags: ["generated"]
 
       - name: Setup proxy for registries
         id: proxy
@@ -139,4 +134,3 @@ jobs:
         with:
           category: ${{ matrix.category }}
           upload: true
-          checkout-path: ${{ github.workspace }}
